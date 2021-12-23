@@ -1,0 +1,2 @@
+ShouldBind memeriksa Content-Type untuk memilih mesin penjilidan secara otomatis, 
+Bergantung pada header "Jenis Konten" binding yang berbeda digunakan
