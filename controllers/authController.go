@@ -28,6 +28,7 @@ type AuthController interface {
 	HandleSuccess(ctx *gin.Context)
 	HandleMailExpired(ctx *gin.Context)
 	HandleMailAlreadyActive(ctx *gin.Context)
+	Logout(ctx *gin.Context)
 }
 
 type authController struct {
@@ -69,17 +70,17 @@ func (c *authController) Login(ctx *gin.Context) {
 		if user.IsActive == true {
 			v.Token = generateToken
 			v.RefreshToken = refreshToken
-			response := helpers.BuildSuccessResponse(true, "OK!", v)
+			response := helpers.BuildSuccessResponse(true, "Login Success", v)
 			ctx.AbortWithStatusJSON(http.StatusOK, response)
 			return
 		} else if user.IsActive == false {
 			response := helpers.BuildErrorResponse("Oppsss", "please check your account", helpers.EmptyObj{})
-			ctx.AbortWithStatusJSON(http.StatusOK, response)
+			ctx.AbortWithStatusJSON(http.StatusForbidden, response)
 			return
 		}
 
 	}
-	response := helpers.BuildErrorResponse("Please Check Again email or Password", "Invalid Credential", helpers.EmptyObj{})
+	response := helpers.BuildErrorResponse("oops", "Please Check Again email or Password", helpers.EmptyObj{})
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 	getCredential, _ := json.Marshal(loginDTO)
 	logger.Error(fmt.Sprintf("LOGIN FAILED", string(getCredential)))
@@ -104,7 +105,7 @@ func (c *authController) Register(ctx *gin.Context) {
 	}
 
 	if !c.authService.IsDuplicateEmail(registerDTO.Email) {
-		response := helpers.BuildErrorResponse("duplicate email", "please check your email", helpers.EmptyObj{})
+		response := helpers.BuildErrorResponse("Email Already exist!", "please check your email", helpers.EmptyObj{})
 		ctx.AbortWithStatusJSON(http.StatusConflict, response)
 		return
 	} else {
@@ -255,3 +256,58 @@ func (c *authController) HandleMailAlreadyActive(ctx *gin.Context) {
 		fmt.Fprintf(ctx.Writer, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+func (c *authController) Logout(ctx *gin.Context) {
+	au, err := c.jwtService.ExtractTokenMetaDataFromRedis(ctx)
+	fmt.Println(au)
+	if err != nil {
+		response := helpers.BuildErrorResponse("opps", "unauthorized!", helpers.EmptyObj{})
+		ctx.JSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	deleted, delErr := c.jwtService.DeleteAuth(au.AccessUuid)
+	fmt.Println(au.AccessUuid)
+	if delErr != nil || deleted == 0 {
+		response := helpers.BuildErrorResponse("opps", "unauthorized!!", helpers.EmptyObj{})
+		ctx.JSON(http.StatusUnauthorized, response)
+		return
+	}
+
+	response := helpers.BuildSuccessResponse(true, "Successfully logged out", helpers.EmptyObj{})
+	ctx.JSON(http.StatusOK, response)
+}
+
+// func RefreshToken(ctx *gin.Context) {
+// 	mapToken := map[string]string{}
+// 	if err := ctx.ShouldBind(&mapToken); err != nil {
+// 		ctx.JSON(http.StatusUnprocessableEntity,err.Error())
+// 		return
+// 	}
+// 	refreshToken := mapToken["refresh_token"]
+
+// 	//verify token
+// 	os.Setenv("REF_SECRET_KEY","ggwpcok")
+// 	token, err := jwt.Parse(refreshToken,func(token *jwt.Token) (interface{}, error) {
+// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+// 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+// 		}
+// 		return []byte(os.Getenv("REF_SECRET_KEY")),nil
+// 	})
+// 	//if there is an error, the token must have expired
+// 	if err != nil {
+// 		ctx.JSON(http.StatusUnauthorized,"Refresh token expired")
+// 		return
+// 	}
+// 	//is token valid
+// 	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
+// 		ctx.JSON(http.StatusUnauthorized, err)
+// 		return
+// 	 }
+
+// 	 //since token is valid, get the uuid
+// 	 claims,ok := token.Claims.(jwt.Claims)
+// 	 if ok && token.Valid {
+
+// 	 }
+// }

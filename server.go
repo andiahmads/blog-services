@@ -61,6 +61,7 @@ func main() {
 		authRouters.GET("/email/callback", authController.HandleSuccess)
 		authRouters.GET("/email/expiret-token", authController.HandleMailExpired)
 		authRouters.GET("/email/already-active", authController.HandleMailAlreadyActive)
+		authRouters.POST("/logout", authController.Logout)
 	}
 	roleRouters := r.Group("api/role")
 	{

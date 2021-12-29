@@ -1,0 +1,38 @@
+version: "3"
+services:
+
+  radit-redis:
+    image: redis:alpine
+    ports:
+      - "63790:6379"
+    networks:
+      - raddit
+    volumes:
+      - raddit-redis:/data
+  raddi-mysql:
+    image: mysql:8.0
+    volumes:
+      - raddit-db:/var/lib/mysql
+    networks:
+      - raddit
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASS}'
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: '${DB_NAME}'
+      MYSQL_USER: '${DB_USER}'
+      MYSQL_PASSWORD: '${DB_PASS}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    ports:
+      - "33660:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-p${DB_PASS}"]
+      retries: 3
+      timeout: 5s
+
+networks:
+  raddit:
+    driver: bridge
+
+volumes:
+  raddit-db:
+  raddit-redis:
