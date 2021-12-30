@@ -278,36 +278,36 @@ func (c *authController) Logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-// func RefreshToken(ctx *gin.Context) {
-// 	mapToken := map[string]string{}
-// 	if err := ctx.ShouldBind(&mapToken); err != nil {
-// 		ctx.JSON(http.StatusUnprocessableEntity,err.Error())
-// 		return
-// 	}
-// 	refreshToken := mapToken["refresh_token"]
+func RefreshToken(ctx *gin.Context) {
+	mapToken := map[string]string{}
+	if err := ctx.ShouldBind(&mapToken); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	refreshToken := mapToken["refresh_token"]
 
-// 	//verify token
-// 	os.Setenv("REF_SECRET_KEY","ggwpcok")
-// 	token, err := jwt.Parse(refreshToken,func(token *jwt.Token) (interface{}, error) {
-// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-// 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-// 		}
-// 		return []byte(os.Getenv("REF_SECRET_KEY")),nil
-// 	})
-// 	//if there is an error, the token must have expired
-// 	if err != nil {
-// 		ctx.JSON(http.StatusUnauthorized,"Refresh token expired")
-// 		return
-// 	}
-// 	//is token valid
-// 	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
-// 		ctx.JSON(http.StatusUnauthorized, err)
-// 		return
-// 	 }
+	//verify token
+	os.Setenv("REF_SECRET_KEY", "ggwpcok")
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("REF_SECRET_KEY")), nil
+	})
+	//if there is an error, the token must have expired
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, "Refresh token expired")
+		return
+	}
+	//is token valid
+	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
+		ctx.JSON(http.StatusUnauthorized, err)
+		return
+	}
 
-// 	 //since token is valid, get the uuid
-// 	 claims,ok := token.Claims.(jwt.Claims)
-// 	 if ok && token.Valid {
+	//since token is valid, get the uuid
+	claims, ok := token.Claims.(jwt.Claims)
+	if ok && token.Valid {
 
-// 	 }
-// }
+	}
+}
