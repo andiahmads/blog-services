@@ -15,8 +15,8 @@ import (
 )
 
 type JWTService interface {
-	GenerateToken(UserID string) string
-	RefToken(UserID string) string
+	GenerateToken(UserID uint64) (string, error)
+	RefToken(UserID uint64) (string, error)
 	ActivationToken(UserID string) string
 	ValidateToken(token string) (*jwt.Token, error)
 	SaveMetaDataTokenToRedis(userid uint64) error
@@ -61,7 +61,7 @@ func getSecretKey() string {
 	return secretKey
 }
 
-func (j *jwtService) GenerateToken(UserID string) string {
+func (j *jwtService) GenerateToken(UserID uint64) (string, error) {
 	j.AtExpires = time.Now().Add(time.Minute * 60).Unix()
 	j.AccessUuid = uuid.NewV4().String()
 
@@ -77,10 +77,10 @@ func (j *jwtService) GenerateToken(UserID string) string {
 	if err != nil {
 		panic(err)
 	}
-	return j.AccessToken
+	return j.AccessToken, err
 }
 
-func (j *jwtService) RefToken(UserID string) string {
+func (j *jwtService) RefToken(UserID uint64) (string, error) {
 	j.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
 	j.RefreshUuid = uuid.NewV4().String()
 
@@ -97,7 +97,7 @@ func (j *jwtService) RefToken(UserID string) string {
 	if err != nil {
 		panic(err)
 	}
-	return j.RefreshToken
+	return j.RefreshToken, err
 
 }
 func (j *jwtService) ActivationToken(UserID string) string {
@@ -148,7 +148,6 @@ func (j *jwtService) SaveMetaDataTokenToRedis(userid uint64) error {
 
 func ExtractToken(r *http.Request) string {
 	bearToken := r.Header.Get("Authorization")
-	fmt.Println("dari ExtractToken =", bearToken)
 	//normally Authorization the_token_xxx
 	strArr := strings.Split(bearToken, " ")
 
@@ -160,7 +159,6 @@ func ExtractToken(r *http.Request) string {
 
 func VerifyToken(r *http.Request) (*jwt.Token, error) {
 	tokenString := ExtractToken(r)
-	fmt.Println("from verifyToken = ", tokenString)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		//Make sure that the token method conform to "SigningMethodHMAC"
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -180,7 +178,6 @@ func (j *jwtService) ExtractTokenMetaDataFromRedis(ctx *gin.Context) (*jwtServic
 		return nil, err
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
-	fmt.Println("from extract metadata = ", claims)
 	if ok && token.Valid {
 		accessUuid, ok := claims["access_uuid"].(string)
 		if !ok {

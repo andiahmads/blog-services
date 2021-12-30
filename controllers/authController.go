@@ -29,6 +29,7 @@ type AuthController interface {
 	HandleMailExpired(ctx *gin.Context)
 	HandleMailAlreadyActive(ctx *gin.Context)
 	Logout(ctx *gin.Context)
+	RefreshToken(ctx *gin.Context)
 }
 
 type authController struct {
@@ -56,8 +57,14 @@ func (c *authController) Login(ctx *gin.Context) {
 	attempLogin := c.authService.VerifyCredential(loginDTO.Email, loginDTO.Password)
 
 	if v, ok := attempLogin.(entity.User); ok {
-		generateToken := c.jwtService.GenerateToken(strconv.FormatUint(v.ID, 10))
-		refreshToken := c.jwtService.RefToken(strconv.FormatUint(v.ID, 10))
+		generateToken, err := c.jwtService.GenerateToken(v.ID)
+		if err != nil {
+			panic(err)
+		}
+		refreshToken, err := c.jwtService.RefToken(v.ID)
+		if err != nil {
+			panic(err)
+		}
 		//save metadata to redis
 		saveErr := c.jwtService.SaveMetaDataTokenToRedis(v.ID)
 
@@ -278,14 +285,16 @@ func (c *authController) Logout(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func RefreshToken(ctx *gin.Context) {
+func (c *authController) RefreshToken(ctx *gin.Context) {
+
 	mapToken := map[string]string{}
-	if err := ctx.ShouldBind(&mapToken); err != nil {
+	fmt.Print(mapToken)
+
+	if err := ctx.ShouldBindJSON(&mapToken); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 	refreshToken := mapToken["refresh_token"]
-
 	//verify token
 	os.Setenv("REF_SECRET_KEY", "ggwpcok")
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
@@ -306,8 +315,53 @@ func RefreshToken(ctx *gin.Context) {
 	}
 
 	//since token is valid, get the uuid
-	claims, ok := token.Claims.(jwt.Claims)
+	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
+		refreshUuid, ok := claims["refresh_id"].(string)
+		if !ok {
+			ctx.JSON(http.StatusUnprocessableEntity, err)
+			return
+		}
+		userId, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
+		if err != nil {
+			response := helpers.BuildErrorResponse("opps", "Error occured", helpers.EmptyObj{})
+			ctx.JSON(http.StatusUnprocessableEntity, response)
+			return
+		}
+
+		//delete the previus refresh token
+		deleted, delErr := c.jwtService.DeleteAuth(refreshUuid)
+		if delErr != nil || deleted == 0 {
+			response := helpers.BuildErrorResponse("opps", "Unathorization!", helpers.EmptyObj{})
+			ctx.JSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		//create new pairs of refresh and access token
+		ts, createErr := c.jwtService.GenerateToken(userId)
+		if createErr != nil {
+			response := helpers.BuildErrorResponse("opps", "Unathorization!", helpers.EmptyObj{})
+			ctx.JSON(http.StatusUnauthorized, response)
+			return
+		}
+		saveErr := c.jwtService.SaveMetaDataTokenToRedis(userId)
+		if saveErr != nil {
+			response := helpers.BuildErrorResponse("opps", "Unathorization!", helpers.EmptyObj{})
+			ctx.JSON(http.StatusUnauthorized, response)
+			return
+
+		}
+
+		response := helpers.BuildSuccessResponse(true, "ok!", ts)
+
+		ctx.JSON(http.StatusOK, response)
+		return
+
+	} else {
+		response := helpers.BuildErrorResponse("opps", "Unathorization!", helpers.EmptyObj{})
+		ctx.JSON(http.StatusUnauthorized, response)
+		return
 
 	}
+
 }
