@@ -286,15 +286,6 @@ func (c *authController) Logout(ctx *gin.Context) {
 }
 
 func (c *authController) RefreshToken(ctx *gin.Context) {
-
-	// var refToken dto.RefreshToken
-
-	// errDTO := ctx.ShouldBind(&refToken)
-	// fmt.Println(errDTO)
-	// if errDTO != nil {
-	// 	ctx.JSON(http.StatusInternalServerError, errDTO.Error())
-	// }
-
 	mapToken := map[string]string{}
 	if err := ctx.ShouldBindJSON(&mapToken); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, err.Error())
