@@ -12,7 +12,7 @@ services:
   raddi-mysql:
     image: mysql:8.0
     volumes:
-      - raddit-db:/var/run/mysqld
+      - raddit-db:/var/lib/mysql
     networks:
       - raddit
     environment:
