@@ -15,8 +15,8 @@ import (
 )
 
 type JWTService interface {
-	GenerateToken(UserID uint64) (string, error)
-	RefToken(UserID uint64) (string, error)
+	GenerateAccessToken(UserID uint64) (string, error)
+	GenerateRefreshToken(UserID uint64) (string, error)
 	ActivationToken(UserID string) string
 	ValidateToken(token string) (*jwt.Token, error)
 	SaveMetaDataTokenToRedis(userid uint64) error
@@ -61,7 +61,7 @@ func getSecretKey() string {
 	return secretKey
 }
 
-func (j *jwtService) GenerateToken(UserID uint64) (string, error) {
+func (j *jwtService) GenerateAccessToken(UserID uint64) (string, error) {
 	j.AtExpires = time.Now().Add(time.Minute * 60).Unix()
 	j.AccessUuid = uuid.NewV4().String()
 
@@ -80,7 +80,7 @@ func (j *jwtService) GenerateToken(UserID uint64) (string, error) {
 	return j.AccessToken, err
 }
 
-func (j *jwtService) RefToken(UserID uint64) (string, error) {
+func (j *jwtService) GenerateRefreshToken(UserID uint64) (string, error) {
 	j.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
 	j.RefreshUuid = uuid.NewV4().String()
 
@@ -183,7 +183,8 @@ func (j *jwtService) ExtractTokenMetaDataFromRedis(ctx *gin.Context) (*jwtServic
 		if !ok {
 			return nil, err
 		}
-		userId, err := strconv.ParseUint(fmt.Sprintf("%s", claims["user_id"]), 10, 64)
+		userId, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
+		fmt.Println(userId)
 		if err != nil {
 			return nil, err
 		}

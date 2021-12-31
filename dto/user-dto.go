@@ -21,3 +21,7 @@ type CekStatus struct {
 	ID       uint64 `json:"id"`
 	IsActive bool   `json:"is_active"`
 }
+
+type RefreshToken struct {
+	RefreshToken string `json:"refresh_token"`
+}

@@ -57,11 +57,11 @@ func (c *authController) Login(ctx *gin.Context) {
 	attempLogin := c.authService.VerifyCredential(loginDTO.Email, loginDTO.Password)
 
 	if v, ok := attempLogin.(entity.User); ok {
-		generateToken, err := c.jwtService.GenerateToken(v.ID)
+		generateToken, err := c.jwtService.GenerateAccessToken(v.ID)
 		if err != nil {
 			panic(err)
 		}
-		refreshToken, err := c.jwtService.RefToken(v.ID)
+		refreshToken, err := c.jwtService.GenerateRefreshToken(v.ID)
 		if err != nil {
 			panic(err)
 		}
@@ -287,24 +287,33 @@ func (c *authController) Logout(ctx *gin.Context) {
 
 func (c *authController) RefreshToken(ctx *gin.Context) {
 
-	mapToken := map[string]string{}
-	fmt.Print(mapToken)
+	// var refToken dto.RefreshToken
 
+	// errDTO := ctx.ShouldBind(&refToken)
+	// fmt.Println(errDTO)
+	// if errDTO != nil {
+	// 	ctx.JSON(http.StatusInternalServerError, errDTO.Error())
+	// }
+
+	mapToken := map[string]string{}
 	if err := ctx.ShouldBindJSON(&mapToken); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 	refreshToken := mapToken["refresh_token"]
+	fmt.Println(refreshToken)
 	//verify token
-	os.Setenv("REF_SECRET_KEY", "ggwpcok")
+	os.Setenv("JWT_SECRET_KEY", "andiahmad") //this should be in an env file
 	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		//Make sure that the token method conform to "SigningMethodHMAC"
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(os.Getenv("REF_SECRET_KEY")), nil
+		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})
 	//if there is an error, the token must have expired
 	if err != nil {
+		// panic(err)
 		ctx.JSON(http.StatusUnauthorized, "Refresh token expired")
 		return
 	}
@@ -317,12 +326,14 @@ func (c *authController) RefreshToken(ctx *gin.Context) {
 	//since token is valid, get the uuid
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
-		refreshUuid, ok := claims["refresh_id"].(string)
+		refreshUuid, ok := claims["refresh_uuid"].(string)
+		fmt.Println(refreshUuid)
 		if !ok {
-			ctx.JSON(http.StatusUnprocessableEntity, err)
+			ctx.JSON(http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		userId, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["user_id"]), 10, 64)
+		fmt.Println(userId)
 		if err != nil {
 			response := helpers.BuildErrorResponse("opps", "Error occured", helpers.EmptyObj{})
 			ctx.JSON(http.StatusUnprocessableEntity, response)
@@ -338,12 +349,14 @@ func (c *authController) RefreshToken(ctx *gin.Context) {
 		}
 
 		//create new pairs of refresh and access token
-		ts, createErr := c.jwtService.GenerateToken(userId)
+		accessToken, createErr := c.jwtService.GenerateAccessToken(userId)
+		refreshToken, createErr := c.jwtService.GenerateRefreshToken(userId)
 		if createErr != nil {
 			response := helpers.BuildErrorResponse("opps", "Unathorization!", helpers.EmptyObj{})
 			ctx.JSON(http.StatusUnauthorized, response)
 			return
 		}
+
 		saveErr := c.jwtService.SaveMetaDataTokenToRedis(userId)
 		if saveErr != nil {
 			response := helpers.BuildErrorResponse("opps", "Unathorization!", helpers.EmptyObj{})
@@ -352,7 +365,12 @@ func (c *authController) RefreshToken(ctx *gin.Context) {
 
 		}
 
-		response := helpers.BuildSuccessResponse(true, "ok!", ts)
+		tokens := map[string]string{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+		}
+
+		response := helpers.BuildSuccessResponse(true, "ok!", tokens)
 
 		ctx.JSON(http.StatusOK, response)
 		return
