@@ -42,8 +42,13 @@ func StartAppV1() {
 	}
 	roleRouters := r.Group("api/role")
 	{
-		roleRouters.POST("/create", roleController.CreateRoles)
+		roleRouters.POST("/", roleController.CreateRoles)
 	}
+	// roleRouters.POST("/", roleController.CreateRoles)
+	// roleRouters.GET("/{id}", roleController.GetByIdRole)
+	// roleRouters.GET("/", roleController.GetRoles)
+	// roleRouters.PUT("/", roleController.UpdateRole)
+	// roleRouters.DELETE("/", roleController.DeleteRole)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 

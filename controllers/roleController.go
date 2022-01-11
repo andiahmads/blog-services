@@ -25,13 +25,17 @@ func NewRoleController(roleService services.RoleService) RoleController {
 }
 
 func (c *roleController) CreateRoles(context *gin.Context) {
-	var registerDTO dto.RoleDTO
-	errDTO := context.ShouldBind(&registerDTO)
+
+	var roleDTO dto.RoleDTO
+	errDTO := context.ShouldBind(&roleDTO)
+	errDTO = helpers.ValidationForDTO(roleDTO)
 	if errDTO != nil {
 		response := helpers.BuildErrorResponse("Failed to Proccess", errDTO.Error(), helpers.EmptyObj{})
 		context.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
 	}
-	result := c.roleService.CreateRole(registerDTO)
+	result := c.roleService.CreateRole(roleDTO)
 	response := helpers.BuildSuccessResponse(true, "OK", result)
 	context.JSON(http.StatusCreated, response)
+	return
 }

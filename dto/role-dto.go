@@ -1,7 +1,7 @@
 package dto
 
 type RoleDTO struct {
-	Name      string `json:"name" form:"name" binding:"required"`
-	Uuid      int    `json:"uuid" form:"uuid"`
-	IsDeleted bool   `json:"is_deleted" form:"is_deleted"`
+	Name      string `json:"name" validate:"required,min=4,max=15"`
+	Uuid      int    `json:"uuid"`
+	IsDeleted bool   `json:"is_deleted"`
 }

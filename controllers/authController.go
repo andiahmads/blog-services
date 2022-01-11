@@ -18,7 +18,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type AuthController interface {
@@ -96,14 +95,11 @@ func (c *authController) Login(ctx *gin.Context) {
 }
 
 func (c *authController) Register(ctx *gin.Context) {
-	var validate *validator.Validate
 	var registerDTO dto.RegisterDTO
 
 	errDTO := ctx.ShouldBind(&registerDTO)
-	fmt.Println(errDTO)
 
-	validate = validator.New()
-	errDTO = validate.Struct(&registerDTO)
+	errDTO = helpers.ValidationForDTO(registerDTO)
 	if errDTO != nil {
 		response := helpers.BuildErrorResponse("Failed to process", errDTO.Error(), helpers.EmptyObj{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)

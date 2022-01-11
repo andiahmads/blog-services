@@ -7,7 +7,7 @@ package dto
 // }
 
 type RegisterDTO struct {
-	Name     string `json:"name" validate:"required"`
+	Name     string `json:"name" validate:"required,min=4,max=15"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password,omitempty" validate:"required"`
 }

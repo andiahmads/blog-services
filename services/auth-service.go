@@ -82,4 +82,3 @@ func comparePassword(hashedPwd string, plainPassword []byte) bool {
 	}
 	return true
 }
-
