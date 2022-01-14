@@ -14,7 +14,7 @@ type User struct {
 	RoleID       uint64 `gorm:"not null" json:"-"`
 	IsActive     bool   `gorm:"not null" json:"is_active"`
 	Token        string `gorm:"-" json:"token,omitempty"`
-	RefreshToken string `gorm:"-" json:"refresh_token"`
+	RefreshToken string `gorm:"-" json:"refresh_token"`	
 	IsDeleted    bool   `gorm:"type:bool" default:"false"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time

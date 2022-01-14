@@ -41,6 +41,18 @@ func BuildErrorResponse(message string, err string, data interface{}) Response {
 	return res
 }
 
+
+
+func BuildErrorDtoValidation(message string, err interface{}, data interface{}) Response {
+	res := Response{
+		Status:  false,
+		Message: message,
+		Errors:  err,
+		Data:    data,
+	}
+	return res
+}
+
 func NewValidationError(message string) *AppError {
 	return &AppError{
 		Message: message,

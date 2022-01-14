@@ -99,9 +99,10 @@ func (c *authController) Register(ctx *gin.Context) {
 
 	errDTO := ctx.ShouldBind(&registerDTO)
 
-	errDTO = helpers.ValidationForDTO(registerDTO)
+	ErrorMessageField, errDTO := helpers.ValidationForDTO(registerDTO)
+
 	if errDTO != nil {
-		response := helpers.BuildErrorResponse("Failed to process", errDTO.Error(), helpers.EmptyObj{})
+		response := helpers.BuildErrorDtoValidation("Failed to process", ErrorMessageField, helpers.EmptyObj{})
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
 		logger.Error(errDTO.Error())
 		return
@@ -147,6 +148,8 @@ func (c *authController) Register(ctx *gin.Context) {
 
 	}
 
+	// response := helpers.BuildSuccessResponse(true, "register success, please check your email", "")
+	// ctx.AbortWithStatusJSON(http.StatusCreated, response)
 }
 
 func (c *authController) VerificationEmail(ctx *gin.Context) {

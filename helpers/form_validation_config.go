@@ -1,9 +1,7 @@
 package helpers
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
@@ -13,7 +11,7 @@ import (
 
 var validate *validator.Validate
 
-func ValidationForDTO(data interface{}) error {
+func ValidationForDTO(data interface{}) (map[string]string, error) {
 	validate = validator.New()
 	english := en.New()
 	uni := ut.New(english, english)
@@ -21,19 +19,20 @@ func ValidationForDTO(data interface{}) error {
 	_ = en_translations.RegisterDefaultTranslations(validate, trans)
 
 	err := validate.Struct(data)
-	fmt.Println(data)
-	errs := translateError(err, trans)
+	if err != nil {
+		errsTrans := translateError(err, trans)
+		fmt.Println(errsTrans)
 
-	if err == nil {
-		return nil
-	}
+		var errors = make(map[string]string)
 
-	var errorMessage []string
-	for i := 0; i < len(errs); i++ {
-		errorMessage = append(errorMessage, errs[i].Error())
-		fmt.Println(errorMessage)
+		for key, erx := range err.(validator.ValidationErrors) {
+			errors[erx.StructField()] = errsTrans[key].Error()
+		}
+
+		return errors, err
 	}
-	return errors.New(strings.Join(errorMessage, "\n"))
+	return nil, nil
+
 }
 
 func translateError(err error, trans ut.Translator) (errs []error) {
