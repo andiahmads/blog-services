@@ -10,7 +10,7 @@ import (
 func TestValidationForDTO(t *testing.T) {
 
 	p := &dto.RegisterDTO{
-		Name:     "",
+		Name:     "tesfdfdfd",
 		Email:    "andi.fivesco@gai.com",
 		Password: "KOCOK",
 	}

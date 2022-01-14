@@ -28,9 +28,10 @@ func (c *roleController) CreateRoles(context *gin.Context) {
 
 	var roleDTO dto.RoleDTO
 	errDTO := context.ShouldBind(&roleDTO)
-	// errDTO = helpers.ValidationForDTO(roleDTO)
+	ErrorMessageField, errDTO := helpers.ValidationForDTO(roleDTO)
+
 	if errDTO != nil {
-		response := helpers.BuildErrorResponse("Failed to Proccess", errDTO.Error(), helpers.EmptyObj{})
+		response := helpers.BuildErrorDtoValidation("Failed to Proccess", ErrorMessageField, helpers.EmptyObj{})
 		context.AbortWithStatusJSON(http.StatusBadRequest, response)
 		return
 	}
